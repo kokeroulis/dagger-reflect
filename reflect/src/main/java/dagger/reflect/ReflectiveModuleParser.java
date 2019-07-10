@@ -20,9 +20,7 @@ import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
 import dagger.reflect.TypeUtil.ParameterizedTypeImpl;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -38,9 +36,17 @@ final class ReflectiveModuleParser {
 
         if (Modifier.isAbstract(method.getModifiers())) {
           if (method.getAnnotation(Binds.class) != null) {
-            Key key = Key.of(qualifier, returnType);
-            Binding binding = new UnlinkedBindsBinding(method);
-            addBinding(scopeBuilder, key, binding, annotations);
+            if (TypeUtil.methodHasGenericErasedType(method)) {
+              Class<?> classForGeneric = TypeUtil.classOfGenericSuperType(moduleClass);
+
+              Binding binding = new UnlinkedGenericBindsBinding(method, classForGeneric);
+              Key key = Key.of(qualifier, returnType);
+              addBinding(scopeBuilder, key, binding, annotations);
+            } else {
+              Key key = Key.of(qualifier, returnType);
+              Binding binding = new UnlinkedBindsBinding(method);
+              addBinding(scopeBuilder, key, binding, annotations);
+            }
           } else if (method.getAnnotation(BindsOptionalOf.class) != null) {
             try {
               Key key =

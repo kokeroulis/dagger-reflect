@@ -15,17 +15,36 @@
  */
 package dagger.reflect;
 
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.WildcardType;
+import java.lang.reflect.*;
 import java.util.Arrays;
+
+import com.google.common.reflect.TypeParameter;
 import org.jetbrains.annotations.Nullable;
+import sun.reflect.generics.reflectiveObjects.TypeVariableImpl;
 
 final class TypeUtil {
   private static final Type[] EMPTY_TYPE_ARRAY = new Type[] {};
 
   private TypeUtil() {}
+
+  static boolean methodHasGenericErasedType(Method method) {
+    Type type = method.getGenericParameterTypes()[0];
+    return type instanceof TypeVariable;
+  }
+
+  static Class<?> classOfGenericSuperType(Class<?> moduleClass) {
+    ParameterizedType parameterizedGenericType = getParameterizedTypeForErasedGenericClass(moduleClass);
+    return (Class<?>) parameterizedGenericType.getActualTypeArguments()[0];
+  }
+
+  private static ParameterizedType getParameterizedTypeForErasedGenericClass(Class<?> moduleClass) {
+    Type genericClassType = moduleClass.getGenericSuperclass();
+    if (genericClassType instanceof ParameterizedType) {
+      return (ParameterizedType) genericClassType;
+    } else {
+      return (ParameterizedType) moduleClass.getGenericInterfaces()[0];
+    }
+  }
 
   /**
    * Returns a type that is functionally equal but not necessarily equal according to {@link

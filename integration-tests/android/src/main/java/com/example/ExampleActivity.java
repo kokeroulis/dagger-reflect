@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.TextView;
 import dagger.Module;
@@ -32,9 +33,9 @@ public final class ExampleActivity extends Activity {
     textView.setText(string);
     setContentView(textView);
 
+    Log.e("testaaaa", toString());
+    exampleClass.bar();
     startService(new Intent(this, ExampleService.class));
   }
 
-  @Module
-  static abstract class ExampleActivityModule extends BaseActivityBindingModule<ExampleActivity> {}
 }
