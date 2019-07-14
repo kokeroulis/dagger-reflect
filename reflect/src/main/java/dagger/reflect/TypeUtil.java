@@ -19,6 +19,7 @@ import java.lang.reflect.*;
 import java.util.Arrays;
 
 import com.google.common.reflect.TypeParameter;
+import dagger.android.DispatchingAndroidInjector;
 import org.jetbrains.annotations.Nullable;
 import sun.reflect.generics.reflectiveObjects.TypeVariableImpl;
 
@@ -27,10 +28,45 @@ final class TypeUtil {
 
   private TypeUtil() {}
 
-  static boolean methodHasGenericErasedType(Method method) {
-    Type type = method.getGenericParameterTypes()[0];
-    return type instanceof TypeVariable;
+  static boolean isAndroidInjectorFactory(Type type) {
+    if (type instanceof ParameterizedType) {
+      ParameterizedType parameterizedKeyType = (ParameterizedType) type;
+      Type rawKeyType = parameterizedKeyType.getRawType();
+      return DispatchingAndroidInjector.class.equals(rawKeyType);
+    }
+
+    return false;
   }
+
+  static boolean methodHasGenericErasedType(Method method) {
+    Type[] type = method.getGenericParameterTypes();
+    return type.length > 0 && type[0] instanceof TypeVariable;
+  }
+
+  static boolean classHasGenericParameter(Class<?> clazz) {
+    return clazz.getGenericSuperclass() instanceof ParameterizedType;
+  }
+
+  @Nullable
+  static String findGenericTypeFromDelegateClass(Field field) {
+    if (field.getGenericType() instanceof ParameterizedType) {
+      ParameterizedType type = (ParameterizedType) field.getGenericType();
+      if (type.getActualTypeArguments().length > 0) {
+        return Key.getTypeName(type.getActualTypeArguments()[0]);
+      }
+    }
+
+    return null;
+  }
+
+//  static ParameterizedType getParameterizedTypeFromClass(Class<?> moduleClass) {
+//    Type genericClassType = moduleClass.getGenericSuperclass();
+//    if (genericClassType instanceof Class<?>) {
+//      return null;
+//    } else {
+//
+//    }
+//  }
 
   static Class<?> classOfGenericSuperType(Class<?> moduleClass) {
     ParameterizedType parameterizedGenericType = getParameterizedTypeForErasedGenericClass(moduleClass);

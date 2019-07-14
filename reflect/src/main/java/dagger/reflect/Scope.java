@@ -66,7 +66,7 @@ final class Scope {
       }
     }
 
-    LinkedBinding<?> binding = findExistingBinding(key, linker);
+    LinkedBinding<?> binding = !TypeUtil.isAndroidInjectorFactory(key.type()) ?findExistingBinding(key, linker) : null;
     if (binding != null) {
       return binding;
     }

@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
-
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
 android {
   compileSdkVersion 28
 
@@ -45,13 +46,15 @@ android {
 dependencies {
   implementation deps.dagger.runtime
   implementation deps.dagger.androidRuntime
-
+  implementation deps.dagger.androidSupportRuntime
+  implementation 'androidx.appcompat:appcompat:1.0.0'
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.30"
   reflectImplementation project(':reflect')
-  reflectAnnotationProcessor project(':reflect-compiler')
+  kaptReflect project(':reflect-compiler')
 
   codegenImplementation project(':codegen')
-  codegenAnnotationProcessor deps.dagger.compiler
-  codegenAnnotationProcessor deps.dagger.androidCompiler
+  kaptCodegen deps.dagger.compiler
+  kaptCodegen deps.dagger.androidCompiler
 
   testImplementation deps.junit
   testImplementation deps.truth

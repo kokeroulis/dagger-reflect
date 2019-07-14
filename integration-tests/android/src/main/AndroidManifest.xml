@@ -5,6 +5,7 @@
 
   <application
       android:name=".ExampleApp"
+      android:theme="@style/Theme.AppCompat.Light"
       android:label="Dagger Reflect"
       >
     <activity android:name=".ExampleActivity">

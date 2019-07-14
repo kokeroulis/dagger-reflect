@@ -15,7 +15,7 @@ public final class ExampleActivityTest {
     try (ActivityScenario<ExampleActivity> scenario = launch(ExampleActivity.class)) {
       scenario.moveToState(CREATED);
       scenario.onActivity(activity -> {
-        assertThat(activity.string).isEqualTo("Hello!");
+        assertThat(activity.getString()).isEqualTo("Hello!");
       });
     }
   }

@@ -21,22 +21,50 @@ import static dagger.reflect.Reflection.trySet;
 
 import dagger.MembersInjector;
 import dagger.reflect.Binding.LinkedBinding;
+import org.jetbrains.annotations.Nullable;
+
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 
 final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
   static <T> MembersInjector<T> create(Class<T> cls, Scope scope) {
+
+
+    /**
+     * [P, com.example.ExamplePresenter]
+     */
+    ConcurrentHashMap<String, Class<?>> genericParameterNameAndActualClass = new ConcurrentHashMap<>();
     Deque<ClassInjector<T>> classInjectors = new ArrayDeque<>();
     Class<?> target = cls;
     while (target != Object.class && target != null) {
+
+
+      if (TypeUtil.classHasGenericParameter(target)) {
+        ParameterizedType baseClass = (ParameterizedType) target.getGenericSuperclass();
+
+
+        if (baseClass.getRawType() instanceof Class<?>) {
+          Class<?> rawType = (Class<?>) baseClass.getRawType();
+          if (rawType.getTypeParameters().length > 0) {
+            TypeVariable<? extends Class<?>>[] typeParamters = rawType.getTypeParameters();
+            // we assume that we have only one parameter but easily we could extend this to work with multiple
+            String parameterTypeName = Key.getTypeName(typeParamters[0]);
+
+            if (baseClass.getActualTypeArguments().length > 0) {
+             Type parameterActualType = baseClass.getActualTypeArguments()[0];
+             if (parameterActualType instanceof Class<?>) {
+               genericParameterNameAndActualClass.put(parameterTypeName, (Class<?>) parameterActualType);
+             }
+            }
+          }
+        }
+      }
       Map<Field, LinkedBinding<?>> fieldBindings = new LinkedHashMap<>();
       for (Field field : target.getDeclaredFields()) {
         if (field.getAnnotation(Inject.class) == null) {
@@ -57,9 +85,25 @@ final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
                   + field.getName());
         }
 
-        Key key = Key.of(findQualifier(field.getDeclaredAnnotations()), field.getGenericType());
-        LinkedBinding<?> binding = scope.getBinding(key);
+        @SuppressWarnings("UnusedVariable")
+        Type fff = field.getGenericType();
 
+        String keyName = TypeUtil.findGenericTypeFromDelegateClass(field);
+        if (keyName == null) {
+          keyName = Key.getTypeName(field.getGenericType());
+        }
+        Key candidateKey;
+        if (genericParameterNameAndActualClass.containsKey(keyName)) {
+          Type actualType = substitudeGenericErasedType(field, genericParameterNameAndActualClass);
+          candidateKey = Key.of(
+                  findQualifier(field.getDeclaredAnnotations()),
+                  actualType != null ? actualType : field.getGenericType()
+          );
+        } else {
+          candidateKey = Key.of(findQualifier(field.getDeclaredAnnotations()), field.getGenericType());
+        }
+
+        LinkedBinding<?> binding = scope.getBinding(candidateKey);
         fieldBindings.put(field, binding);
       }
 
@@ -115,6 +159,26 @@ final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
     }
 
     return new ReflectiveMembersInjector<>(classInjectors);
+  }
+
+  @Nullable
+  static Type substitudeGenericErasedType(Field field, ConcurrentHashMap<String, Class<?>> genericParameterNameAndActualClass) {
+    Type genericType = field.getGenericType();
+
+    if (genericType instanceof ParameterizedType) {
+      ParameterizedType parameterizedType = (ParameterizedType) genericType;
+
+      if (parameterizedType.getActualTypeArguments().length > 0) {
+        Type parameterType = parameterizedType.getActualTypeArguments()[0];
+        String parameterTypeName = Key.getTypeName(parameterType);
+
+        if (genericParameterNameAndActualClass.containsKey(parameterTypeName)) {
+          return new TypeUtil.ParameterizedTypeImpl(null, parameterizedType.getRawType(), genericParameterNameAndActualClass.get(parameterTypeName));
+        }
+      }
+    }
+
+    return null;
   }
 
   private final Iterable<ClassInjector<T>> classInjectors;

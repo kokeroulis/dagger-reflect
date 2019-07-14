@@ -41,7 +41,7 @@ abstract class Key {
   }
 
   /** Backport of {@link Type#getTypeName()}. */
-  private static String getTypeName(Type type) {
+  static String getTypeName(Type type) {
     if (type instanceof Class<?>) {
       Class<?> cls = (Class<?>) type;
       if (cls.isArray()) {
