@@ -17,6 +17,7 @@ package dagger.reflect;
 
 import java.lang.reflect.*;
 import java.util.Arrays;
+import java.util.Objects;
 
 import com.google.common.reflect.TypeParameter;
 import dagger.android.DispatchingAndroidInjector;
@@ -89,7 +90,7 @@ final class TypeUtil {
   static Type canonicalize(Type type) {
     if (type instanceof Class) {
       Class<?> c = (Class<?>) type;
-      return c.isArray() ? new GenericArrayTypeImpl(canonicalize(c.getComponentType())) : c;
+      return c.isArray() ? new GenericArrayTypeImpl(c.getComponentType()) : c;
 
     } else if (type instanceof ParameterizedType) {
       if (type instanceof ParameterizedTypeImpl) return type;
@@ -110,10 +111,6 @@ final class TypeUtil {
     } else {
       return type; // This type is unsupported!
     }
-  }
-
-  static int hashCodeOrZero(@Nullable Object o) {
-    return o != null ? o.hashCode() : 0;
   }
 
   static String typeToString(Type type) {
@@ -177,7 +174,7 @@ final class TypeUtil {
 
     @Override
     public int hashCode() {
-      return Arrays.hashCode(typeArguments) ^ rawType.hashCode() ^ hashCodeOrZero(ownerType);
+      return Arrays.hashCode(typeArguments) ^ rawType.hashCode() ^ Objects.hashCode(ownerType);
     }
 
     @Override

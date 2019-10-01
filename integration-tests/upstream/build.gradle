@@ -74,10 +74,6 @@ test.filter {
 
   // TODO reflect bug! Subcomponent multibindings propagation does not work.
   excludeTest 'dagger.functional.subcomponent.SubcomponentMultibindingsTest', null
-
-  // Uses @MapKey which does not have runtime retention.
-  excludeTest 'dagger.functional.multibindings.ComplexMapKeysInDifferentOrderTest', 'test'
-  excludeTest 'dagger.functional.multibindings.MapKeyWithDefaultTest', 'test'
 }
 
 dependencies {
@@ -102,10 +98,15 @@ def ensureDaggerSubmodule = tasks.create('ensureDaggerSubmodule') {
       System.err.println(describe.errorStream.text)
       throw new RuntimeException("Could not run 'git describe' in 'dagger' git submodule clone")
     }
-    if ("dagger-${versions.dagger}" != describe.inputStream.text.trim()) {
+    def expectedTag = "dagger-${versions.dagger}"
+    if (expectedTag != describe.inputStream.text.trim()) {
       throw new RuntimeException(
-          "Wrong tag checked out for 'dagger' git submodule clone. Should be 'dagger-${versions.dagger}'.")
+          "Wrong tag checked out for 'dagger' git submodule clone. Should be '$expectedTag'.")
     }
   }
 }
 compileTestJava.dependsOn(ensureDaggerSubmodule)
+
+tasks.withType(JavaCompile).configureEach {
+  options.encoding = 'UTF-8'
+}

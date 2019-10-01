@@ -2,8 +2,9 @@ import net.ltgt.gradle.errorprone.CheckSeverity
 
 buildscript {
   ext.versions = [
-      'dagger': '2.23.2',
-      'incap' : '0.2'
+      'dagger': '2.24',
+      'incap': '0.2',
+      'androidTools': '26.4.1',
   ]
 
   ext.deps = [
@@ -16,7 +17,7 @@ buildscript {
           'androidCompiler': "com.google.dagger:dagger-android-processor:${versions.dagger}",
       ],
       'junit': 'junit:junit:4.13-beta-3',
-      'truth': 'com.google.truth.extensions:truth-java8-extension:0.45',
+      'truth': 'com.google.truth.extensions:truth-java8-extension:1.0',
       'compileTesting': 'com.google.testing.compile:compile-testing:0.18',
       'javaPoet': 'com.squareup:javapoet:1.11.1',
       'auto': [
@@ -38,6 +39,12 @@ buildscript {
           'test': [
               'core': 'androidx.test:core:1.2.0',
           ],
+      ],
+      'lint': [
+          'core': "com.android.tools.lint:lint:${versions.androidTools}",
+          'api': "com.android.tools.lint:lint-api:${versions.androidTools}",
+          'checks': "com.android.tools.lint:lint-checks:${versions.androidTools}",
+          'tests': "com.android.tools.lint:lint-tests:${versions.androidTools}",
       ],
       'incap': [
           'runtime': "net.ltgt.gradle.incap:incap:${versions.incap}",
@@ -100,6 +107,8 @@ subprojects {
   }
 
   tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+
     options.errorprone {
       disableWarningsInGeneratedCode = true
       excludedPaths = ".*/build/generated/.*"

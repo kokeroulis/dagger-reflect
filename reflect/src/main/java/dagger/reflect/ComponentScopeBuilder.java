@@ -30,7 +30,7 @@ final class ComponentScopeBuilder {
     return create(subcomponent.modules(), new Class<?>[0], scopeAnnotation, parent);
   }
 
-  private static ComponentScopeBuilder create(
+  static ComponentScopeBuilder create(
       Class<?>[] moduleClasses,
       Class<?>[] dependencyClasses,
       Set<Annotation> scopeAnnotations,
@@ -111,7 +111,7 @@ final class ComponentScopeBuilder {
     }
   }
 
-  Scope build() {
+  Scope.Builder get() {
     Scope.Builder scopeBuilder =
         new Scope.Builder(parent, scopeAnnotations)
             .justInTimeLookupFactory(new ReflectiveJustInTimeLookupFactory());
@@ -121,12 +121,7 @@ final class ComponentScopeBuilder {
     }
 
     for (Map.Entry<Class<?>, Object> entry : moduleInstances.entrySet()) {
-      Object instance = entry.getValue();
-      if (instance != null) {
-        scopeBuilder.addModule(instance);
-      } else {
-        scopeBuilder.addModule(entry.getKey());
-      }
+      ReflectiveModuleParser.parse(entry.getKey(), entry.getValue(), scopeBuilder);
     }
 
     for (Map.Entry<Class<?>, Object> entry : dependencyInstances.entrySet()) {
@@ -135,7 +130,7 @@ final class ComponentScopeBuilder {
       if (instance == null) {
         throw new IllegalStateException(type.getCanonicalName() + " must be set");
       }
-      scopeBuilder.addDependency(type, instance);
+      ReflectiveDependencyParser.parse(type, instance, scopeBuilder);
     }
 
     for (Class<?> subcomponentClass : subcomponentClasses) {
@@ -165,6 +160,6 @@ final class ComponentScopeBuilder {
       }
     }
 
-    return scopeBuilder.build();
+    return scopeBuilder;
   }
 }

@@ -16,7 +16,7 @@ final class UnlinkedJustInTimeBinding<T> extends UnlinkedBinding {
   private final Class<T> cls;
   private final Constructor<T> constructor;
   // Type arguments might be used as types for this binding's parameterized constructor parameters.
-  @Nullable private Type[] concreteTypeArguments;
+  private @Nullable Type[] concreteTypeArguments;
 
   UnlinkedJustInTimeBinding(
       Class<T> cls, Constructor<T> constructor, @Nullable Type[] concreteTypeArguments) {
@@ -45,7 +45,7 @@ final class UnlinkedJustInTimeBinding<T> extends UnlinkedBinding {
 
   private Type getTypeKeyForParameter(Type parameterType) {
     if (isTypeVariable(parameterType)) {
-      return matchTypeToConcreteType((TypeVariable) parameterType);
+      return matchTypeToConcreteType((TypeVariable<?>) parameterType);
     } else if (hasParameterizedTypeVariable(parameterType)) {
       return findKeyForParameterizedType((ParameterizedType) parameterType);
     }
@@ -87,7 +87,7 @@ final class UnlinkedJustInTimeBinding<T> extends UnlinkedBinding {
     Type[] matchedTypeArguments = new Type[typeArguments.length];
     for (int i = 0; i < typeArguments.length; i++) {
       if (isTypeVariable(typeArguments[i])) {
-        matchedTypeArguments[i] = matchTypeToConcreteType((TypeVariable) typeArguments[i]);
+        matchedTypeArguments[i] = matchTypeToConcreteType((TypeVariable<?>) typeArguments[i]);
       } else {
         matchedTypeArguments[i] = typeArguments[i];
       }
@@ -103,7 +103,7 @@ final class UnlinkedJustInTimeBinding<T> extends UnlinkedBinding {
    * @param typeToLookup The parameterized type placeholder to lookup.
    * @return The matching concrete type for the placeholder.
    */
-  private Type matchTypeToConcreteType(TypeVariable typeToLookup) {
+  private Type matchTypeToConcreteType(TypeVariable<?> typeToLookup) {
     if (concreteTypeArguments == null) {
       throw new IllegalStateException(
           "No concrete type arguments for " + cls + " but needed for " + typeToLookup);

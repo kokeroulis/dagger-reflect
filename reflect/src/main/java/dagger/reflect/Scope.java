@@ -35,6 +35,11 @@ final class Scope {
     this.parent = parent;
   }
 
+  @Override
+  public String toString() {
+    return "Scope" + annotations;
+  }
+
   LinkedBinding<?> getBinding(Key key) {
     LinkedBinding<?> binding = findBinding(key, null);
     if (binding != null) {
@@ -76,10 +81,7 @@ final class Scope {
       LinkedBinding<?> jitBinding = putJitBinding(key, linker, jitLookup);
       if (jitBinding == null) {
         throw new IllegalStateException(
-            "Unable to find binding for key="
-                + key
-                + " and linker="
-                + linker); // TODO nice error message with scope chain
+            "Unable to find binding for key=" + key + " with linker=" + linker);
       }
       return jitBinding;
     }
@@ -241,7 +243,7 @@ final class Scope {
     }
 
     /**
-     * Adds a new element into the set specified by {@code key}.
+     * Adds a new set of elements into the set specified by {@code key}.
      *
      * @param key The key defining the set into which this element will be added. The raw class of
      *     the {@linkplain Key#type() type} must be {@link Set Set.class}.
@@ -304,21 +306,6 @@ final class Scope {
       return addBinding(key, new LinkedInstanceBinding<>(instance));
     }
 
-    Builder addModule(Object module) {
-      ReflectiveModuleParser.parse(module.getClass(), module, this);
-      return this;
-    }
-
-    Builder addModule(Class<?> module) {
-      ReflectiveModuleParser.parse(module, null, this);
-      return this;
-    }
-
-    Builder addDependency(Class<?> cls, Object instance) {
-      ReflectiveDependencyParser.parse(cls, instance, this);
-      return this;
-    }
-
     Scope build() {
       ConcurrentHashMap<Key, Binding> allBindings = new ConcurrentHashMap<>(keyToBinding);
 
@@ -357,22 +344,9 @@ final class Scope {
                     Map.class,
                     mapKeyType,
                     new ParameterizedTypeImpl(null, Provider.class, mapValueType)));
-        Key mapOfLazyKey =
-            Key.of(
-                mapOfValueKey.qualifier(),
-                new ParameterizedTypeImpl(
-                    null,
-                    Map.class,
-                    mapKeyType,
-                    new ParameterizedTypeImpl(null, Lazy.class, mapValueType)));
 
         Binding replaced =
             allBindings.put(mapOfValueKey, new UnlinkedMapOfValueBinding(mapOfProviderKey));
-        if (replaced != null) {
-          throw new IllegalStateException(); // TODO implicit map binding duplicates explicit one.
-        }
-
-        replaced = allBindings.put(mapOfLazyKey, new UnlinkedMapOfLazyBinding(mapOfProviderKey));
         if (replaced != null) {
           throw new IllegalStateException(); // TODO implicit map binding duplicates explicit one.
         }

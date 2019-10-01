@@ -11,7 +11,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 @RunWith(RobolectricTestRunner.class) //
 public final class ExampleActivityTest {
-  @Test public void string() {
+  @Test public void activityInjection() {
     try (ActivityScenario<ExampleActivity> scenario = launch(ExampleActivity.class)) {
       scenario.moveToState(CREATED);
       scenario.onActivity(activity -> {

@@ -21,6 +21,11 @@ import dagger.multibindings.IntoSet;
 import dagger.reflect.TypeUtil.ParameterizedTypeImpl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -81,16 +86,17 @@ final class ReflectiveModuleParser {
             }
           }
         } else {
-          if (!Modifier.isStatic(method.getModifiers()) && instance == null) {
-            // Try to just-in-time create an instance of the module using a default constructor.
-            instance = maybeInstantiate(moduleClass);
-            if (instance == null) {
-              throw new IllegalStateException(moduleClass.getCanonicalName() + " must be set");
-            }
-          }
-
           if (method.getAnnotation(Provides.class) != null) {
             ensureNotPrivate(method);
+            if (!Modifier.isStatic(method.getModifiers()) && instance == null) {
+              ensureNotAbstract(moduleClass);
+              // Try to just-in-time create an instance of the module using a default constructor.
+              instance = maybeInstantiate(moduleClass);
+              if (instance == null) {
+                throw new IllegalStateException(moduleClass.getCanonicalName() + " must be set");
+              }
+            }
+
             Key key = Key.of(qualifier, returnType);
             Binding binding = new UnlinkedProvidesBinding(instance, method);
             addBinding(scopeBuilder, key, binding, annotations);
@@ -105,7 +111,18 @@ final class ReflectiveModuleParser {
     Annotation scope = findScope(annotations);
     if (scope != null) {
       if (!scopeBuilder.annotations.contains(scope)) {
-        throw new IllegalStateException(); // TODO wrong scope
+        throw new IllegalStateException(
+            "[Dagger/IncompatiblyScopedBindings] "
+                // TODO clarify which "(sub)component" failed
+                // (method when UnlinkedAndroidInjectorFactoryBinding is being created)
+                // ([sub]componentClass in when calling ComponentScopeBuilder is calling create)
+                + "(sub)component scoped with "
+                + scopeBuilder.annotations
+                + " may not reference bindings with different scopes:\n"
+                + "@"
+                + scope.annotationType().getCanonicalName()
+                + " "
+                + binding);
       } else {
         binding = binding.asScoped();
       }
@@ -133,7 +150,14 @@ final class ReflectiveModuleParser {
   private static void addSetElementsBinding(
       Scope.Builder scopeBuilder, Key setKey, Binding elementsBinding) {
     if (Types.getRawType(setKey.type()) != Set.class) {
-      throw new IllegalStateException(); // TODO must be set
+      throw new IllegalArgumentException(
+          "@BindsIntoSet must return Set. Found " + setKey.type() + ".");
+    }
+    if (((ParameterizedType) setKey.type()).getActualTypeArguments()[0] instanceof WildcardType) {
+      throw new IllegalArgumentException(
+          "@Binds methods must return a primitive, an array, a type variable, or a declared type. Found "
+              + setKey.type()
+              + ".");
     }
     scopeBuilder.addBindingElementsIntoSet(setKey, elementsBinding);
   }
@@ -197,6 +221,15 @@ final class ReflectiveModuleParser {
   private static void ensureNotPrivate(Method method) {
     if (Modifier.isPrivate(method.getModifiers())) {
       throw new IllegalArgumentException("Provides methods may not be private: " + method);
+    }
+  }
+
+  private static void ensureNotAbstract(Class<?> moduleClass) {
+    if (Modifier.isAbstract(moduleClass.getModifiers())) {
+      throw new IllegalStateException(
+          moduleClass.getCanonicalName()
+              + " is abstract and has instance @Provides methods."
+              + " Consider making the methods static or including a non-abstract subclass of the module instead.");
     }
   }
 }

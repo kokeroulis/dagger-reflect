@@ -61,6 +61,22 @@ public final class IntegrationTest {
   }
 
   @Test
+  @IgnoreCodegen
+  @ReflectBug("check not implemented")
+  public void bindsProviderNullabilityMismatch() {
+    BindsProviderNullabilityMismatch component =
+        backend.create(BindsProviderNullabilityMismatch.class);
+    try {
+      assertThat(component.string()).isNull();
+      fail();
+    } catch (Exception e) {
+      // TODO assert some error message similar to "java.lang.String is not nullable, but is being
+      // provided by @Provides @Nullable String
+      // com.example.BindsProviderNull.Module1.provideString()"
+    }
+  }
+
+  @Test
   public void bindsProviderNull() {
     BindsProviderNull component = backend.create(BindsProviderNull.class);
     assertThat(component.string()).isNull();
@@ -76,6 +92,34 @@ public final class IntegrationTest {
   public void bindElementsIntoSet() {
     BindsElementsIntoSet component = backend.create(BindsElementsIntoSet.class);
     assertThat(component.strings()).containsExactly("foo");
+  }
+
+  @Test
+  @IgnoreCodegen
+  public void bindElementsIntoSetWrongReturn() {
+    try {
+      backend.create(BindsElementsIntoSetWrongReturn.class);
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo("@BindsIntoSet must return Set. Found class java.lang.String.");
+    }
+  }
+
+  @Test
+  @IgnoreCodegen
+  public void bindElementsIntoSetGenericWrongReturn() {
+    try {
+      backend.create(BindsElementsIntoSetGenericWrongReturn.class);
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "@Binds methods must return a primitive, an array, a type variable, or a "
+                  + "declared type. Found java.util.Set<? extends java.lang.String>.");
+    }
   }
 
   @Test
@@ -229,7 +273,11 @@ public final class IntegrationTest {
       component.thing();
       fail();
     } catch (IllegalStateException e) {
-      // TODO assert some message
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Unable to find binding for key=com.example.JustInTimeWrongScope$Thing"
+                  + " with linker=null");
     }
   }
 
@@ -241,7 +289,11 @@ public final class IntegrationTest {
       component.thing();
       fail();
     } catch (IllegalStateException e) {
-      // TODO assert some message
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Unable to find binding for key=com.example.JustInTimeScopedIntoUnscoped$Thing"
+                  + " with linker=null");
     }
   }
 
@@ -254,7 +306,11 @@ public final class IntegrationTest {
       child.thing();
       fail();
     } catch (IllegalStateException e) {
-      // TODO assert some message
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Unable to find binding for key=com.example.JustInTimeNotScopedInAncestry$Thing"
+                  + " with linker=null");
     }
   }
 
@@ -337,6 +393,14 @@ public final class IntegrationTest {
   @Test
   public void implicitModuleInstance() {
     ImplicitModuleInstance component = backend.create(ImplicitModuleInstance.class);
+
+    assertThat(component.string()).isEqualTo("one");
+  }
+
+  @Test
+  public void implicitModuleInstanceNotCreatedWhenUnnecessary() {
+    ImplicitModuleInstanceCannotBeCreated component =
+        backend.create(ImplicitModuleInstanceCannotBeCreated.class);
 
     assertThat(component.string()).isEqualTo("one");
   }
@@ -762,7 +826,12 @@ public final class IntegrationTest {
       backend.create(ScopedWrong.class);
       fail();
     } catch (IllegalStateException e) {
-      // TODO some message indicating wrong scope
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "[Dagger/IncompatiblyScopedBindings] "
+                  + "(sub)component scoped with [@javax.inject.Singleton()] may not reference bindings with different scopes:\n"
+                  + "@com.example.ScopedWrong.Unrelated @Provides[com.example.ScopedWrong$Module1.value(…)]");
     }
   }
 
@@ -907,6 +976,45 @@ public final class IntegrationTest {
   public void moduleInterfaceHierarchy() {
     ModuleInterfaceHierarchy component = backend.create(ModuleInterfaceHierarchy.class);
     assertThat(component.number()).isEqualTo(42);
+  }
+
+  @Test
+  public void moduleInterfaceWithDefaultMethodUnrelatedDoesNotAffectDagger() {
+    ModuleInterfaceDefaultMethodUnrelated component =
+        backend.create(ModuleInterfaceDefaultMethodUnrelated.class);
+    assertThat(component.string()).isEqualTo("foo");
+  }
+
+  @Test
+  @IgnoreCodegen
+  public void moduleAbstractClassInstanceMethodNotAllowed() {
+    try {
+      backend.create(ModuleAbstractInstanceProvidesMethod.class);
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "com.example.ModuleAbstractInstanceProvidesMethod.Module1 is abstract and has instance"
+                  + " @Provides methods. Consider making the methods static or including a non-abstract"
+                  + " subclass of the module instead.");
+    }
+  }
+
+  @Test
+  @IgnoreCodegen
+  public void moduleInterfaceWithDefaultMethodNotAllowed() {
+    try {
+      backend.create(ModuleInterfaceDefaultProvidesMethod.class);
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "com.example.ModuleInterfaceDefaultProvidesMethod.Module1 is abstract and has instance"
+                  + " @Provides methods. Consider making the methods static or including a non-abstract"
+                  + " subclass of the module instead.");
+    }
   }
 
   @Test
@@ -1340,6 +1448,24 @@ public final class IntegrationTest {
             .create(new SubcomponentFactoryProvision.Nested.Module2(2L));
     assertThat(nested.one()).isEqualTo("one");
     assertThat(nested.two()).isEqualTo(2L);
+  }
+
+  @Test
+  public void componentBindingInstance() {
+    ComponentBindingInstance instance = backend.create(ComponentBindingInstance.class);
+    assertThat(instance).isSameInstanceAs(instance.self());
+    assertThat(instance).isSameInstanceAs(instance.target().component);
+  }
+
+  @Test
+  public void subcomponentBindingInstance() {
+    SubcomponentBindingInstance component = backend.create(SubcomponentBindingInstance.class);
+    SubcomponentBindingInstance.Sub subcomponent = component.sub();
+    // TODO https://github.com/google/dagger/issues/1550
+    // assertThat(subcomponent).isSameInstanceAs(subcomponent.self());
+    SubcomponentBindingInstance.Target target = subcomponent.target();
+    assertThat(component).isSameInstanceAs(target.component);
+    assertThat(subcomponent).isSameInstanceAs(target.subcomponent);
   }
 
   @Test
