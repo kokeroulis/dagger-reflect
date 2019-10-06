@@ -35,6 +35,11 @@ final class Scope {
     this.parent = parent;
   }
 
+  @Nullable
+  public Scope getParent() {
+    return parent;
+  }
+
   @Override
   public String toString() {
     return "Scope" + annotations;
@@ -268,6 +273,12 @@ final class Scope {
       return this;
     }
 
+    boolean hasBinding(Key key, Type returnType) {
+      Map<Object, Binding> mapBindings = keyToMapBindings.get(key);
+      return mapBindings != null && mapBindings.get(returnType) != null;
+    }
+
+
     /**
      * Adds a new entry into the map specified by {@code key}.
      *
@@ -296,7 +307,7 @@ final class Scope {
       }
       Binding replaced = mapBindings.put(entryKey, entryValueBinding);
       if (replaced != null) {
-        throw new IllegalStateException(); // TODO duplicate keys
+        throw new IllegalStateException(entryKey.toString()); // TODO duplicate keys
       }
 
       return this;
