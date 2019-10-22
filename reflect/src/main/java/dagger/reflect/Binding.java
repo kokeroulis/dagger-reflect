@@ -50,5 +50,9 @@ interface Binding {
     public final Binding asScoped() {
       return new LinkedScopedBinding<>(this);
     }
+
+    public boolean isRecyclable() {
+      return true;
+    }
   }
 }

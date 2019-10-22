@@ -1,6 +1,5 @@
 package com.example
 
-import dagger.Binds
 import dagger.Module
 import dagger.android.ContributesAndroidInjector
 
