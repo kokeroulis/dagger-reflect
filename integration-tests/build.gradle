@@ -13,4 +13,6 @@ dependencies {
   testImplementation project(':reflect')
   testImplementation project(':codegen')
   testAnnotationProcessor deps.auto.value.compiler
+
+  testImplementation deps.dagger.androidRuntimeJar
 }

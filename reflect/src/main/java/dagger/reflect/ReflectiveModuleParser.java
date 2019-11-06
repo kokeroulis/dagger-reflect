@@ -18,6 +18,7 @@ import dagger.android.ContributesAndroidInjector;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
+import dagger.multibindings.Multibinds;
 import dagger.reflect.TypeUtil.ParameterizedTypeImpl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -25,13 +26,14 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+
 import org.jetbrains.annotations.Nullable;
 
 final class ReflectiveModuleParser {
   static void parse(Class<?> moduleClass, @Nullable Object instance, Scope.Builder scopeBuilder) {
+    List<MultiMapBindingFactory> multiMapBindingFactoryList = new ArrayList<>();
+
     for (Class<?> target : Reflection.getDistinctTypeHierarchy(moduleClass)) {
       for (Method method : target.getDeclaredMethods()) {
         Type returnType = method.getGenericReturnType();
@@ -51,6 +53,11 @@ final class ReflectiveModuleParser {
               Binding binding = new UnlinkedBindsBinding(method);
               addBinding(scopeBuilder, key, binding, annotations);
             }
+          } else if (method.getAnnotation(Multibinds.class) != null) {
+            Key key = Key.of(qualifier, returnType);
+            multiMapBindingFactoryList.add(
+                    new MultiMapBindingFactory(key, annotations, new UnlinkedMultiMapBinding(instance, method), returnType)
+            );
           } else if (method.getAnnotation(BindsOptionalOf.class) != null) {
             try {
               Key key =
@@ -101,6 +108,12 @@ final class ReflectiveModuleParser {
             addBinding(scopeBuilder, key, binding, annotations);
           }
         }
+      }
+    }
+
+    for (MultiMapBindingFactory multiMapBindingFactory : multiMapBindingFactoryList) {
+      if (multiMapBindingFactory.isBindingAllowed(scopeBuilder)) {
+        addBinding(scopeBuilder, multiMapBindingFactory.key, multiMapBindingFactory.binding, multiMapBindingFactory.annotations);
       }
     }
   }

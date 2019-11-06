@@ -4,6 +4,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import dagger.Lazy;
+
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -1562,13 +1564,14 @@ public final class IntegrationTest {
   }
 
   @Test
-  public void multipleInterfacesRequestSameDependency() {
-    String value = "my-value";
-    String result =
-        backend
-            .factory(MultipleInterfacesRequestSameDependency.Factory.class)
-            .create(() -> value)
-            .value();
-    assertThat(result).isSameInstanceAs(value);
+  public void mapMultiBinds() {
+    MapMultiBinds.Thing thing = backend
+                    .create(MapMultiBinds.class)
+                    .thing();
+
+    assertThat(thing.getStringIntegerMap()).isEqualTo(new HashMap<String, Integer>(){{
+      put("some key", 1);
+      put("another key", 2);
+    }});
   }
 }

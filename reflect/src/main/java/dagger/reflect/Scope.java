@@ -273,9 +273,9 @@ final class Scope {
       return this;
     }
 
-    boolean hasBinding(Key key, Type returnType) {
-      Map<Object, Binding> mapBindings = keyToMapBindings.get(key);
-      return mapBindings != null && mapBindings.get(returnType) != null;
+    boolean hasBinding(Key key) {
+      Map<Object, Binding> bindingsForMap =  keyToMapBindings.get(key); keyToBinding.get(key);
+      return bindingsForMap != null;
     }
 
 
