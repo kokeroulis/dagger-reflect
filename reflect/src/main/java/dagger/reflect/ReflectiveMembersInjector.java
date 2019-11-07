@@ -42,8 +42,8 @@ final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
     ConcurrentHashMap<String, Class<?>> genericParameterNameAndActualClass = new ConcurrentHashMap<>();
     Deque<ClassInjector<T>> classInjectors = new ArrayDeque<>();
     Class<?> target = cls;
-    while (target != Object.class && target != null) {
 
+    while (target != Object.class && target != null) {
 
       if (TypeUtil.classHasGenericParameter(target)) {
         ParameterizedType baseClass = (ParameterizedType) target.getGenericSuperclass();
@@ -60,6 +60,13 @@ final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
              Type parameterActualType = baseClass.getActualTypeArguments()[0];
              if (parameterActualType instanceof Class<?>) {
                genericParameterNameAndActualClass.put(parameterTypeName, (Class<?>) parameterActualType);
+             } else if (parameterActualType instanceof TypeVariable) {
+               String parameterActualTypeName = Key.getTypeName(parameterActualType);
+               Class<?> parameterizedClassCandidate = genericParameterNameAndActualClass.get(parameterActualTypeName);
+
+               if (parameterizedClassCandidate != null) {
+                 genericParameterNameAndActualClass.put(parameterTypeName, parameterizedClassCandidate);
+               }
              }
             }
           }
@@ -84,9 +91,6 @@ final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
                   + "."
                   + field.getName());
         }
-
-        @SuppressWarnings("UnusedVariable")
-        Type fff = field.getGenericType();
 
         String keyName = TypeUtil.findGenericTypeFromDelegateClass(field);
         if (keyName == null) {
