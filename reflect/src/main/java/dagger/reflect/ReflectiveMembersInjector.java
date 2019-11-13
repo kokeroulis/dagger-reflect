@@ -48,27 +48,18 @@ final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
       if (TypeUtil.classHasGenericParameter(target)) {
         ParameterizedType baseClass = (ParameterizedType) target.getGenericSuperclass();
 
-
         if (baseClass.getRawType() instanceof Class<?>) {
           Class<?> rawType = (Class<?>) baseClass.getRawType();
-          if (rawType.getTypeParameters().length > 0) {
-            TypeVariable<? extends Class<?>>[] typeParamters = rawType.getTypeParameters();
-            // we assume that we have only one parameter but easily we could extend this to work with multiple
-            String parameterTypeName = Key.getTypeName(typeParamters[0]);
 
-            if (baseClass.getActualTypeArguments().length > 0) {
-             Type parameterActualType = baseClass.getActualTypeArguments()[0];
-             if (parameterActualType instanceof Class<?>) {
-               genericParameterNameAndActualClass.put(parameterTypeName, (Class<?>) parameterActualType);
-             } else if (parameterActualType instanceof TypeVariable) {
-               String parameterActualTypeName = Key.getTypeName(parameterActualType);
-               Class<?> parameterizedClassCandidate = genericParameterNameAndActualClass.get(parameterActualTypeName);
+          for (int typeParameterIndex = 0; typeParameterIndex < rawType.getTypeParameters().length; typeParameterIndex++) {
+            // TODO save the array on a list for faster iteration?
+            TypeVariable<? extends Class<?>> typeParameter = rawType.getTypeParameters()[typeParameterIndex];
+            String parameterTypeName = Key.getTypeName(typeParameter);
 
-               if (parameterizedClassCandidate != null) {
-                 genericParameterNameAndActualClass.put(parameterTypeName, parameterizedClassCandidate);
-               }
-             }
-            }
+            // TODO save the array on a list for faster iteration?
+            // TODO could baseClass size be different from rawType?!?!?!
+            Type parameterActualType = baseClass.getActualTypeArguments()[typeParameterIndex];
+            appendActualParamterType(genericParameterNameAndActualClass, parameterTypeName, parameterActualType);
           }
         }
       }
@@ -165,6 +156,23 @@ final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
     return new ReflectiveMembersInjector<>(classInjectors);
   }
 
+  static void appendActualParamterType(
+          Map<String, Class<?>> genericParameterNameAndActualClass,
+          String parameterTypeName,
+          Type parameterActualType
+  ) {
+    if (parameterActualType instanceof Class<?>) {
+      genericParameterNameAndActualClass.put(parameterTypeName, (Class<?>) parameterActualType);
+    } else if (parameterActualType instanceof TypeVariable) {
+      String parameterActualTypeName = Key.getTypeName(parameterActualType);
+      Class<?> parameterizedClassCandidate = genericParameterNameAndActualClass.get(parameterActualTypeName);
+
+      if (parameterizedClassCandidate != null) {
+        genericParameterNameAndActualClass.put(parameterTypeName, parameterizedClassCandidate);
+      }
+    }
+  }
+
   @Nullable
   static Type substitudeGenericErasedType(Field field, ConcurrentHashMap<String, Class<?>> genericParameterNameAndActualClass) {
     Type genericType = field.getGenericType();
@@ -172,13 +180,21 @@ final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
     if (genericType instanceof ParameterizedType) {
       ParameterizedType parameterizedType = (ParameterizedType) genericType;
 
+      // TODO check if we need this if... probably not!
       if (parameterizedType.getActualTypeArguments().length > 0) {
-        Type parameterType = parameterizedType.getActualTypeArguments()[0];
-        String parameterTypeName = Key.getTypeName(parameterType);
+        Class<?>[] actualParameterTypeArray = new Class<?>[parameterizedType.getActualTypeArguments().length];
 
-        if (genericParameterNameAndActualClass.containsKey(parameterTypeName)) {
-          return new TypeUtil.ParameterizedTypeImpl(null, parameterizedType.getRawType(), genericParameterNameAndActualClass.get(parameterTypeName));
+        for (int parameterIndex = 0; parameterIndex < parameterizedType.getActualTypeArguments().length; parameterIndex++) {
+          final Type parameterType = parameterizedType.getActualTypeArguments()[parameterIndex];
+          final String parameterTypeName = Key.getTypeName(parameterType);
+          final Class<?> actualParameterType = genericParameterNameAndActualClass.get(parameterTypeName);
+
+          if (actualParameterType != null) {
+            actualParameterTypeArray[parameterIndex] = actualParameterType;
+          }
         }
+
+        return new TypeUtil.ParameterizedTypeImpl(null, parameterizedType.getRawType(), actualParameterTypeArray);
       }
     }
 
