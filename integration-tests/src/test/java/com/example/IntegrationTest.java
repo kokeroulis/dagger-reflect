@@ -1571,4 +1571,12 @@ public final class IntegrationTest {
             .value();
     assertThat(result).isSameInstanceAs(value);
   }
+
+  @Test
+  public void memberGenericInjectionParameter() {
+    MemberGenericInjectionParameter.FooActivity fooActivity = backend.create(MemberGenericInjectionParameter.class)
+            .fooActivity();
+
+    assertThat(fooActivity).isNotNull();
+  }
 }

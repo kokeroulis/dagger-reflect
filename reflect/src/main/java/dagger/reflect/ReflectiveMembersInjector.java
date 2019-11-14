@@ -15,14 +15,11 @@
  */
 package dagger.reflect;
 
-import static dagger.reflect.Reflection.findQualifier;
-import static dagger.reflect.Reflection.tryInvoke;
-import static dagger.reflect.Reflection.trySet;
-
 import dagger.MembersInjector;
 import dagger.reflect.Binding.LinkedBinding;
 import org.jetbrains.annotations.Nullable;
 
+import javax.inject.Inject;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.ArrayDeque;
@@ -30,7 +27,8 @@ import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Inject;
+
+import static dagger.reflect.Reflection.*;
 
 final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
   static <T> MembersInjector<T> create(Class<T> cls, Scope scope) {
