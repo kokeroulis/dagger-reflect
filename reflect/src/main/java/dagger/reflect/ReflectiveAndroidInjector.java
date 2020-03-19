@@ -42,6 +42,8 @@ final class ReflectiveAndroidInjector<T> implements AndroidInjector<T> {
               .addInstance(Key.of(null, instanceClass), instance)
               .build();
 
+      // TODO creating this takes some extra time... this could be avoided if we cache this.
+      // This is just parsing which could be avoided...
       MembersInjector<T> membersInjector = ReflectiveMembersInjector.create(instanceClass, scope);
       return new ReflectiveAndroidInjector<>(membersInjector);
     }

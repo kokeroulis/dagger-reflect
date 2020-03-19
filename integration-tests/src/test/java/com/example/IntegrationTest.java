@@ -792,6 +792,11 @@ public final class IntegrationTest {
     assertThat(childObject).isNotNull(); // Smoke test.
     Runnable childRunnable = subcomponent.runnable();
     assertThat(childRunnable).isNotNull(); // Smoke test.
+
+    ReusableScoped.I a = component.iInterface();
+    ReusableScoped.I b = component.iInterface();
+
+    assertThat(a).isEqualTo(b);
   }
 
   @Test
@@ -877,6 +882,15 @@ public final class IntegrationTest {
   public void multibindingMap() {
     MultibindingMap component = backend.create(MultibindingMap.class);
     assertThat(component.values()).containsExactly("1", "one", "2", "two");
+  }
+
+  @Test
+  public void multibindingComponentInheritedMap() {
+    ComponentInheritedMultibindingMap component = backend.create(ComponentInheritedMultibindingMap.class);
+         //   .create(backend.create(ComponentInheritedMultibindingMap.ChildComponent.class));
+
+    assertThat(component.dep2().getStringStringMap()).isEqualTo(component.childComponent().build().someDep().lastTwo());
+    //assertThat(component.someDep().getStringStringMap()).containsExactly("1", "one", "2", "two", "3", "three", "4", "four");
   }
 
   @Test

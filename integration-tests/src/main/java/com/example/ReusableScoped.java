@@ -12,6 +12,8 @@ interface ReusableScoped {
 
   Child child();
 
+  I iInterface();
+
   @Subcomponent
   interface Child {
     Object object();
@@ -35,5 +37,16 @@ interface ReusableScoped {
         public void run() {}
       };
     }
+
+    @Provides
+    @Reusable
+    static I providesI() {
+      return new Impl();
+    }
   }
+
+  interface I {}
+
+  class Impl implements I {}
+
 }

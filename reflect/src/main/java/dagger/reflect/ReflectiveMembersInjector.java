@@ -96,7 +96,10 @@ final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
           candidateKey = Key.of(findQualifier(field.getDeclaredAnnotations()), field.getGenericType());
         }
 
-        LinkedBinding<?> binding = scope.getBinding(candidateKey);
+        LinkedBinding<?> binding = BenchmarkUtil.measure("ReflectiveAMemberInjector.inject " + " target " + target + candidateKey.toString(), () -> {
+          return scope.getBinding(candidateKey);
+        });
+
         fieldBindings.put(field, binding);
       }
 
@@ -135,7 +138,10 @@ final class ReflectiveMembersInjector<T> implements MembersInjector<T> {
         LinkedBinding<?>[] bindings = new LinkedBinding<?>[parameterTypes.length];
         for (int i = 0; i < parameterTypes.length; i++) {
           Key key = Key.of(findQualifier(parameterAnnotations[i]), parameterTypes[i]);
-          bindings[i] = scope.getBinding(key);
+
+          bindings[i] = BenchmarkUtil.measure("for lopp " + " target " + target + key.toString(), () -> {
+            return scope.getBinding(key);
+          });
         }
 
         methodBindings.put(method, bindings);

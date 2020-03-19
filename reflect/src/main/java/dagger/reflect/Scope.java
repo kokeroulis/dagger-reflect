@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 final class Scope {
   private final ConcurrentHashMap<Key, Binding> bindings;
+  private final Map<Key, Map<Object, Binding>> keyToMapBinding;
   private final JustInTimeLookup.Factory jitLookupFactory;
   /** The annotations denoting {@linkplain javax.inject.Scope scoped} bindings for this instance. */
   private final Set<Annotation> annotations;
@@ -22,11 +23,13 @@ final class Scope {
   private final @Nullable Scope parent;
 
   private Scope(
-      ConcurrentHashMap<Key, Binding> bindings,
-      JustInTimeLookup.Factory jitLookupFactory,
-      Set<Annotation> annotations,
-      @Nullable Scope parent) {
+          ConcurrentHashMap<Key, Binding> bindings,
+          Map<Key, Map<Object, Binding>> keyToMapBinding,
+          JustInTimeLookup.Factory jitLookupFactory,
+          Set<Annotation> annotations,
+          @Nullable Scope parent) {
     this.bindings = bindings;
+    this.keyToMapBinding = keyToMapBinding;
     this.jitLookupFactory = jitLookupFactory;
     this.annotations = annotations;
     this.parent = parent;
@@ -338,6 +341,11 @@ final class Scope {
         // Take a defensive copy in case the builder is being re-used.
         Map<Object, Binding> entryBindings = new LinkedHashMap<>(entry.getValue());
 
+        if (parent != null) {
+          Map<Object, Binding> parentBindings = parent.keyToMapBinding.get(mapOfValueKey);
+          entryBindings.putAll(parentBindings);
+        }
+
         ParameterizedType mapType = (ParameterizedType) mapOfValueKey.type();
         Type mapKeyType = mapType.getActualTypeArguments()[0];
         Type mapValueType = mapType.getActualTypeArguments()[1];
@@ -364,7 +372,7 @@ final class Scope {
         }
       }
 
-      return new Scope(allBindings, jitLookupFactory, annotations, parent);
+      return new Scope(allBindings, keyToMapBindings, jitLookupFactory, annotations, parent);
     }
 
     private static final class SetBindings {

@@ -13,6 +13,7 @@ import dagger.Binds;
 import dagger.BindsOptionalOf;
 import dagger.MapKey;
 import dagger.Provides;
+import dagger.Reusable;
 import dagger.android.AndroidInjector;
 import dagger.android.ContributesAndroidInjector;
 import dagger.multibindings.ElementsIntoSet;
@@ -134,7 +135,12 @@ final class ReflectiveModuleParser {
     } else if (findAnnotation(annotations, IntoMap.class) != null) {
       addMapBinding(scopeBuilder, key, binding, annotations);
     } else {
-      scopeBuilder.addBinding(key, binding);
+      if (findAnnotation(annotations, Reusable.class) != null) {
+        ReusableUnLinkedBinding reusableUnLinkedBinding = new ReusableUnLinkedBinding(binding);
+        scopeBuilder.addBinding(key, reusableUnLinkedBinding);
+      } else {
+        scopeBuilder.addBinding(key, binding);
+      }
     }
   }
 

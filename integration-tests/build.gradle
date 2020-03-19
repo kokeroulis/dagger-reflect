@@ -12,5 +12,8 @@ dependencies {
   testImplementation deps.truth
   testImplementation project(':reflect')
   testImplementation project(':codegen')
+  // keep these uncommented in order to run all the tests locally
+  //testImplementation deps.dagger.androidRuntime
+  //testImplementation deps.dagger.androidSupportRuntime
   testAnnotationProcessor deps.auto.value.compiler
 }

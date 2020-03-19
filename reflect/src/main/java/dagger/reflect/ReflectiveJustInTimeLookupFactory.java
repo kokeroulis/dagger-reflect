@@ -44,11 +44,7 @@ final class ReflectiveJustInTimeLookupFactory implements JustInTimeLookup.Factor
 
     Annotation scope = findScope(cls.getAnnotations());
     Binding binding;
-    if (TypeUtil.isAndroidInjectorFactory(type)) {
-      binding = new UnlinkedJustInTimeContributesAndroidInjectorBinding<>(cls, target, typeArguments);
-    } else {
-      binding = new UnlinkedJustInTimeBinding<>(cls, target, typeArguments);
-    }
+    binding = new UnlinkedJustInTimeBinding<>(cls, target, typeArguments);
     return new JustInTimeLookup(scope, binding);
   }
 
