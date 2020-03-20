@@ -806,6 +806,16 @@ public final class IntegrationTest {
   }
 
   @Test
+  public void testReusable() {
+    ComponentWithReusableBindings parent = backend.create(ComponentWithReusableBindings.class);
+    ComponentWithReusableBindings.ChildOne childOne = parent.childOne();
+
+    Object reusableInParent = parent.reusableInParent();
+    assertThat(parent.reusableInParent()).isSameInstanceAs(reusableInParent);
+    assertThat(childOne.reusableInParent()).isSameInstanceAs(reusableInParent);
+  }
+
+  @Test
   public void scoped() {
     Scoped component = backend.create(Scoped.class);
     Object value1 = component.value();
